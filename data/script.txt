@@ -1,7 +1,7 @@
 # Lego city script
 
-/*
-begin 
+
+begin
   set var to one
   echo var is $var, comparing to one
   if $var is one then echo they are the same
@@ -16,7 +16,7 @@ begin
   if $bool = true then echo it is true
   set bool to false
   if $bool then echo it is true
-*/
+
 #  debug vars
 
 # Load up all our resources at the beginning

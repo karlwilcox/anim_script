@@ -285,7 +285,7 @@ class TimeCode {
                     s = value;
                 }
             }
-        } while (value != "" && wordPos < words.size());
+        } while (!value.isEmpty() && wordPos < words.size());
         hour = new Match(h);
         minute = new Match(m);
         second = new Match(s);
@@ -471,7 +471,7 @@ class Action {
     Action(WordList words) {
         int argPos = 0;
         StringBuilder cond = new StringBuilder();
-        if (words.size() < 1 || words.get(argPos).equals("")) {
+        if (words.size() < 1 || words.get(argPos).isEmpty()) {
             message("Expected task for trigger");
         } else {
             if (words.get(argPos).equals("if")) {
@@ -569,6 +569,34 @@ class Action {
 
 }
 
+    /*************************************************************************************************
+
+     #####
+     #     # ######  ####  #    # ###### #    #  ####  ######
+     #       #      #    # #    # #      ##   # #    # #
+     #####  #####  #    # #    # #####  # #  # #      #####
+     # #      #  # # #    # #      #  # # #      #
+     #     # #      #   #  #    # #      #   ## #    # #
+     #####  ######  ### #  ####  ###### #    #  ####  ######
+
+     **************************************************************************************************/
+/*
+    class Sequence {
+        ArrayList<PImage> frames = new ArrayList<PImage>();
+        String tag;
+
+    }
+
+
+    class SeqSprite extends Sprite {
+    // Items for sequences
+    int currentStep;
+    int framesPerStep;
+    int frameCount;
+
+}
+*/
+
 /*************************************************************************************************
 
     #####                               
@@ -620,10 +648,14 @@ class Sprite {
     }
 
     public Sprite(String in_imageTag, String  in_tag, float in_x, float in_y, int in_z, String in_scene) {
-        this(in_imageTag, in_tag, in_x, in_y, in_z, -1.0f, -1.0f, in_scene);
+        this(in_imageTag, in_tag,
+                in_x, in_y, in_z, -1.0f, -1.0f,
+                in_scene);
     }
 
-    public Sprite(String in_imageTag, String in_tag, float in_x, float in_y, int in_z, float in_w, float in_h, String in_scene) {
+    public Sprite(String in_imageTag, String in_tag,
+        float in_x, float in_y, int in_z, float in_w, float in_h,
+        String in_scene) {
         scene = in_scene;
         x = in_x; tx = in_x;
         y = in_y; ty = in_y;
@@ -781,7 +813,6 @@ class SpriteList {
             return;
         } // else
         Sprite sprite = spriteList.get(from);
-        message("Movin ", sprite.tag, " to ", String.valueOf(to));
         // need to find proper z value, make it same as previous
         sprite.z = (to > 0) ? spriteList.get(to -1).z : spriteList.get(0).z;
         spriteList.add(to, sprite);
@@ -809,7 +840,7 @@ class SpriteList {
                 moveFrom = i;
                 // don't overflow
                 if (count < 0) {
-                    moveTo = (i + count) > 0 ? (i + count) : 0;
+                    moveTo = Math.max((i + count), 0);
                 } else {
                     moveTo = (size < i + count) ? i + count : size - 1;
                 }
@@ -829,21 +860,18 @@ class SpriteList {
     }
 
     public Sprite find(String in_tag, String in_scene) {
-        Sprite sprite;
         // look for a local tag first
-        if ((in_tag.indexOf(":") < 0) && !in_scene.equals("")) {
+        if ((!in_tag.contains(":")) && !in_scene.isEmpty()) {
             String localTag = in_scene + ":" + in_tag;
-            for (int i = 0; i < spriteList.size(); i++) { 
-                sprite = spriteList.get(i);
-                if (localTag.equals(sprite.tag)) {
-                    return sprite;
+            for (Sprite sprite1 : spriteList) {
+                if (localTag.equals(sprite1.tag)) {
+                    return sprite1;
                 }
             }
         } // not an error if not found, look globally
-        for (int i = 0; i < spriteList.size(); i++) { 
-            sprite = spriteList.get(i);
-            if (in_tag.equals(sprite.tag)) {
-                return sprite;
+        for (Sprite sprite2 : spriteList) {
+            if (in_tag.equals(sprite2.tag)) {
+                return sprite2;
             }
         }
         // Okay, *now* its an error
@@ -860,7 +888,7 @@ class SpriteList {
                 visibility = " (visible)";
             }
             String inScene = " in top level ";
-            if (!sprite.scene.equals("")) {
+            if (!sprite.scene.isEmpty()) {
                 inScene = " in scene " + sprite.scene;
             }
             message(sprite.tag + " => " + sprite.imageTag + " in scene " + sprite.scene + visibility, 
@@ -870,7 +898,7 @@ class SpriteList {
 
     public void stopScene(String in_scene) {
         Sprite sprite;
-        if (in_scene.equals("")) {
+        if (in_scene.isEmpty()) {
             return;
         }
         for (int i = spriteList.size() -1; i >= 0; i--) {
@@ -1188,7 +1216,7 @@ class ParamList {
     }
 
     public boolean isEmpty(String key) {
-        return (params.containsKey(key) && params.get(key).equals(""));
+        return (params.containsKey(key) && params.get(key).isEmpty());
     }
 
     public int asInt(String key) {
@@ -1197,7 +1225,7 @@ class ParamList {
 
     public int asInt(String key, int notGiven) {
         String string = get(key);
-        if (string.equals("")) {
+        if (string.isEmpty()) {
             return notGiven; // not a error, just not provided
         }
         if (!string.matches("\\d+")) {
@@ -1209,7 +1237,7 @@ class ParamList {
 
     public float asFloat(String key) {
         String string = get(key);
-        if (string.equals("")) {
+        if (string.isEmpty()) {
             return 0.0f; // not a error, just not provided
         }
         if (!(string.matches("-?\\d+(\\.\\d+)?"))) {
@@ -1271,7 +1299,7 @@ abstract class Command {
             // already scoped
             return in_tag;
         }
-        if (!scene.equals("")) {
+        if (!scene.isEmpty()) {
             return scene + ":" + in_tag;
         } // else
         return in_tag;
@@ -1386,7 +1414,7 @@ class LoadCommand extends Command {
     LoadCommand() {
         keywords = List.of("load", "upload");
         helpInfo = "load filename [as] [tag] (loads resource, basename as tag if not given)";
-        format = "+/filename ~/as ?/tag";
+        format = "+/filename ~/as ?/tag ~/split ?/cols ?/by ?/rows";
     }
 
     public boolean doProcess() {
@@ -1397,7 +1425,7 @@ class LoadCommand extends Command {
         if (dot > 0) {
             extension = filename.substring(dot + 1);
         }
-        if (tag.equals("")) {
+        if (tag.isEmpty()) {
             tag = filename.substring(0,dot - 1);
         }
         tag = resolveTag(tag);
@@ -1491,7 +1519,7 @@ class ShowCommand extends Command {
 
     public boolean doProcess() {
         String tagList = params.get("rest");
-        for (String tag : splitTokens(tagList, " ")) {
+        for (String tag : splitTokens(tagList, tokens)) {
             Sprite sprite = sprites.find(tag, scene);
             if (sprite != null) {
                 sprite.show();
@@ -1565,7 +1593,7 @@ class PlaceCommand extends Command {
     public boolean doProcess() {
         String itag = params.get("itag");
         String stag = params.get("stag");
-        if (stag.equals("")) {
+        if (stag.isEmpty()) {
             stag = itag;
         }
         String localtag = resolveTag(itag);
@@ -1790,55 +1818,31 @@ class DebugCommand extends Command {
 
 public String expandVar(String word) {
     // built in variables
-    String value = "";
-    switch(word) {
-        case "SECOND": 
-            value = String.valueOf(second());
-            break;
-        case "MINUTE":
-            value = String.valueOf(minute());
-            break;
-        case "HOUR":
-            value = String.valueOf(hour());
-            break;
-        case "FRAMERATE":
-            value = String.valueOf(FRAMERATE);
-            break;
-        case "WIDTH":
-            value = String.valueOf(width);
-            break;
-        case "HEIGHT":
-            value = String.valueOf(height);
-            break;
-        case "CENTERX":
-        case "CENTREX":
-            value = String.valueOf(width / 2);
-            break;
-        case "CENTERY":
-        case "CENTREY":
-            value = String.valueOf(height / 2);
-            break;
-        case "PERCENT":
-            value = String.valueOf((int)random(0,100));
-            break;
-        case "RANDOMX":
-            value = String.valueOf((int)random(0,width));
-            break;
-        case "RANDOMY":
-            value = String.valueOf((int)random(0,height));
-            break;        // scene name? times of day?
-    }
-    if (value.equals("") && vars.containsKey(word)) {
+    String value = switch (word) {
+        case "SECOND" -> String.valueOf(second());
+        case "MINUTE" -> String.valueOf(minute());
+        case "HOUR" -> String.valueOf(hour());
+        case "FRAMERATE" -> String.valueOf(FRAMERATE);
+        case "WIDTH" -> String.valueOf(width);
+        case "HEIGHT" -> String.valueOf(height);
+        case "CENTERX", "CENTREX" -> String.valueOf(width / 2);
+        case "CENTERY", "CENTREY" -> String.valueOf(height / 2);
+        case "PERCENT" -> String.valueOf((int) random(0, 100));
+        case "RANDOMX" -> String.valueOf((int) random(0, width));
+        case "RANDOMY" -> String.valueOf((int) random(0, height));
+        default -> "";        // scene name? times of day?
+    };
+    if (value.isEmpty() && vars.containsKey(word)) {
         return vars.get(word);
     }
-    if (value.equals("")) {
+    if (value.isEmpty()) {
         message("variable not found", word);
     }
     return value;
 }
 
 public String expandAllOnLine(String line) {
-    if (line == null || line.length() < 1) {
+    if (line == null || line.isEmpty()) {
         return "";
     }
     StringBuilder varName = new StringBuilder();
@@ -1851,6 +1855,13 @@ public String expandAllOnLine(String line) {
     boolean changed = false;
     for(pos = 0; pos < line.length(); pos++) {
         char c = line.charAt(pos);
+        if (c == '\\') { // only special before $
+            if (pos + 1 < line.length() && line.charAt(pos + 1) == '$') {
+                newLine.append('$');
+                pos += 1;
+                continue;
+            }
+        }
         if (c == '$') {
             varName = new StringBuilder();
             changed = true;
@@ -1881,7 +1892,7 @@ public String expandAllOnLine(String line) {
             newLine.append(c);
         }
     }
-    if (varName.length() > 0) {
+    if (!varName.isEmpty()) {
         newLine.append(expandVar(varName.toString()));
     }
     if (changed) {
@@ -1999,7 +2010,7 @@ class Scene {
         name = in_name;
         content = in_content;
         filename = in_filename;
-        if (name.equals("")) {
+        if (name.isEmpty()) {
             enabled = true;
         }
     }
@@ -2043,7 +2054,7 @@ class Scene {
     }
 
     public void stop() {
-        if (name.equals("")) {
+        if (name.isEmpty()) {
             // Must be top level, never stop this one!
             return;
         }
@@ -2122,13 +2133,13 @@ public void readFile(String filename) {
                 message("expected scene name", filename, String.valueOf(lineCount));
             } else {
                 currentScene = words[1];
-                if (holding.size() > 0) {
+                if (!holding.isEmpty()) {
                     scenes.add(new Scene(currentScene, holding.toArray(new String[0]), filename));
                     holding = new ArrayList<String>();
                 }
             }
         } else if (line.toLowerCase().startsWith("endscene")) {
-            if (holding.size() > 0) {
+            if (!holding.isEmpty()) {
                 scenes.add(new Scene(currentScene, holding.toArray(new String[0]), filename));
                 holding = new ArrayList<String>();
                 currentScene = "";
@@ -2138,15 +2149,15 @@ public void readFile(String filename) {
             if (words.length < 2) {
                 message("expected filename", filename, String.valueOf(lineCount));
             } else {
-                for (int i = 0; i < words.length; i++) {
-                    readFile(words[i]);
+                for (String word : words) {
+                    readFile(word);
                 }
             }
         } else if (line.toLowerCase().startsWith("finish")) {
             // stop processing this file
             break;
         } else { // just add the line to the current scene
-            if (currentScene.equals("")) {
+            if (currentScene.isEmpty()) {
                 topLevel.add(line);
             } else {
                 holding.add(line);
@@ -2154,25 +2165,25 @@ public void readFile(String filename) {
         }
     }
     // finished reading file
-    if (topLevel.size() > 0) {
+    if (!topLevel.isEmpty()) {
         scenes.add(new Scene("", topLevel.toArray(new String[0]), filename));
     }
-    if (holding.size() > 0) {
+    if (!holding.isEmpty()) {
         scenes.add(new Scene(currentScene, holding.toArray(new String[0]), filename));
     }
 }
 
 public void readScript() {
     if (args != null) {
-        for (int i = 0; i < args.length; i++) {
-            readFile(args[i]);
+        for (String arg : args) {
+            readFile(arg);
         }
     } else {
         readFile(scriptFile);
     }
     // Start running top level scene
     for(Scene scene : scenes) {
-        if (scene.name.equals("")) {
+        if (scene.name.isEmpty()) {
             scene.start();
         }
     }
