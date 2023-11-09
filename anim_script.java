@@ -36,7 +36,7 @@ processing-java --sketch=~/Documents/Processing/lego_animation --force --output=
 
 int FRAMERATE = 10;
 
-HashMap<String,PImage> images = new HashMap<String,PImage>();
+HashMap<String,SpriteImage> images = new HashMap<String,SpriteImage>();
 HashMap<String,SoundFile> sounds = new HashMap<String,SoundFile>();
 ArrayList<Action> actions = new ArrayList<Action>();
 SpriteList sprites = new SpriteList();
@@ -484,7 +484,7 @@ class Action {
                         found = true;
                         break;
                     } else {
-                        cond.append(endif + " ");
+                        cond.append(endif).append(" ");
                     }
                 }
                 if (!found) {
@@ -508,8 +508,8 @@ class Action {
         boolean expressionFound = true;
         String cond = expandAllOnLine(condition);
         
-        if (cond.length() < 1) {
-            return outcome;
+        if (cond.isEmpty()) {
+            return true;
         } // else
         // Try to evaluate it as an expression
         try {
@@ -544,10 +544,10 @@ class Action {
                         break;
                 }
             } else { // juse one string
-                outcome = lhs.toLowerCase().equals("true");
+                outcome = lhs.equalsIgnoreCase("true");
             }
         }
-        if (outcome == false) {
+        if (!outcome) {
             // for some triggers, we don't test again after the first try
             String triggerType = trigger.getClass().getSimpleName();
             if (triggerType.equals("After") || triggerType.equals("AtTime") || triggerType.equals("Start")) {
@@ -569,33 +569,60 @@ class Action {
 
 }
 
-    /*************************************************************************************************
+/*************************************************************************************************
 
-     #####
-     #     # ######  ####  #    # ###### #    #  ####  ######
-     #       #      #    # #    # #      ##   # #    # #
-     #####  #####  #    # #    # #####  # #  # #      #####
-     # #      #  # # #    # #      #  # # #      #
-     #     # #      #   #  #    # #      #   ## #    # #
-     #####  ######  ### #  ####  ###### #    #  ####  ######
+    #####                               ###
+   #     # #####  #####  # ##### ######  #  #    #   ##    ####  ######
+   #       #    # #    # #   #   #       #  ##  ##  #  #  #    # #
+    #####  #    # #    # #   #   #####   #  # ## # #    # #      #####
+         # #####  #####  #   #   #       #  #    # ###### #  ### #
+   #     # #      #   #  #   #   #       #  #    # #    # #    # #
+    #####  #      #    # #   #   ###### ### #    # #    #  ####  ######
 
-     **************************************************************************************************/
-/*
-    class Sequence {
-        ArrayList<PImage> frames = new ArrayList<PImage>();
-        String tag;
+**************************************************************************************************/
 
+class SpriteImage {
+    ArrayList<PImage> spriteFrames = new ArrayList<PImage>();
+    int numFrames = 0;
+    int frameWidth;
+    int frameHeight;
+
+    SpriteImage(String filename) {
+        this(filename, 1, 1);
+    }
+    SpriteImage(String filename, int columns, int rows) {
+        PImage source = loadImage(filename);
+        frameWidth = source.width / columns;
+        frameHeight = source.height / rows;
+        for (int r =0; r < rows; r++) {
+            for (int c = 0; c < columns; c++) {
+                int x = c * frameWidth;
+                int y = r * frameHeight;
+                spriteFrames.add( source.get(x , y, frameWidth, frameHeight));
+            }
+        }
+        numFrames = rows * columns;
     }
 
+    PImage getSpriteFrame(int i) {
+        if (i < numFrames) {
+            return spriteFrames.get(i);
+        } // else
+        return null;
+    }
 
-    class SeqSprite extends Sprite {
-    // Items for sequences
-    int currentStep;
-    int framesPerStep;
-    int frameCount;
+    int size() {
+        return numFrames;
+    }
 
+    int width() {
+        return frameWidth;
+    }
+
+    int height() {
+        return frameHeight;
+    }
 }
-*/
 
 /*************************************************************************************************
 
@@ -643,6 +670,10 @@ class Sprite {
     float dtint = 0;
     float dtrans = 0;
 
+    int framesPerSpriteFrame = 1;
+    int currentSpriteFrame = 0;
+    int lastFrameCount = 0;
+
     public Sprite(String in_imageTag, String in_tag, String in_scene) {
         this(in_imageTag, in_tag, 0.0f, 0.0f, 0, in_scene);
     }
@@ -661,9 +692,9 @@ class Sprite {
         y = in_y; ty = in_y;
         z = in_z;
         if (in_w < 0.0f) {
-          PImage image = images.get(in_imageTag);
-          in_w = image.width;
-          in_h = image.height;
+            SpriteImage spriteImage = images.get(in_imageTag);
+            in_w = spriteImage.width();
+            in_h = spriteImage.height();
         }
         w = in_w; tw = in_w;
         h = in_h; th = in_h;
@@ -757,6 +788,12 @@ class Sprite {
     }
 
     public void display() {
+        SpriteImage spriteImage = images.get(imageTag);
+        if ((frameCount - lastFrameCount) >= framesPerSpriteFrame) {
+            currentSpriteFrame = (currentSpriteFrame + 1) % spriteImage.size();
+            lastFrameCount = frameCount;
+        }
+        PImage image = spriteImage.getSpriteFrame(currentSpriteFrame);
         if (trans > 0) {
             tint(100, (int)trans);
         }
@@ -764,10 +801,10 @@ class Sprite {
             pushMatrix();
             translate(x, y);
             rotate(radians(r));
-            image(images.get(imageTag), 0, 0, w, h);
+            image(image, 0, 0, w, h);
             popMatrix();
         } else { // more simple
-            image(images.get(imageTag), x, y, w, h);
+            image(image, x, y, w, h);
         }
         if (trans > 0) {
             tint(100, 100);
@@ -1116,7 +1153,7 @@ class ParamList {
                 params.put(name,words.getRestAsStr(argPos));
                 return;
             }
-            if (optionality == IFMATCHED && matchFound == false) {
+            if (optionality == IFMATCHED && !matchFound) {
                 // only look for this if the previous CANMATCH was found
                 params.put(name, "");
                 continue;
@@ -1131,9 +1168,6 @@ class ParamList {
                 switch (optionality) {
                     case OPTIONAL:
                     case REQUIRED:
-                        matchFound = false;
-                        params.put(name, arg);
-                        break;
                     case IFMATCHED:
                         matchFound = false;
                         params.put(name, arg);
@@ -1286,8 +1320,59 @@ abstract class Command {
         return found;
     }
 
+    private String evaluateBrackets(String line) {
+        boolean changed = false;
+        boolean inExpression = false;
+        int openCount = 0;
+
+        if (line == null || line.isEmpty()) {
+            return "";
+        }
+        StringBuilder expression = new StringBuilder();
+        StringBuilder newLine = new StringBuilder(line.length());
+        int pos = 0;
+
+        for(pos = 0; pos < line.length(); pos++) {
+            char c = line.charAt(pos);
+            if (inExpression) {
+                if (c == '(') {
+                    openCount += 1;
+                    expression.append(c);
+                    continue;
+                } else if (c == ')') {
+                    if (openCount > 0) {
+                        openCount--;
+                        expression.append(c);
+                    } else {
+                        newLine.append(eval(expression.toString()));
+                        expression = new StringBuilder();
+                        inExpression = false;
+                        changed = true;
+                        openCount = 0;
+                        continue;
+                    }
+                } else {
+                    expression.append(c);
+                    continue;
+                }
+            } else {
+                if (c == '(') {
+                    inExpression = true;
+                } else {
+                    newLine.append(c);
+                }
+            }
+        }
+        if (changed) {
+            // message("expanded: ", line, " to ", newLine.toString());
+            return newLine.toString();
+        } // else
+        return line;
+    }
+
     public boolean process(Action thisAction, String in_scene) {
         String line = expandAllOnLine(thisAction.args);
+        line = evaluateBrackets(line);
         WordList argv = new WordList(line, tokens);
         scene = in_scene;
         params = new ParamList(argv, format);
@@ -1295,7 +1380,7 @@ abstract class Command {
     }
 
     public String resolveTag(String in_tag) {
-        if (in_tag.indexOf(":") >= 0) {
+        if (in_tag.contains(":")) {
             // already scoped
             return in_tag;
         }
@@ -1435,8 +1520,13 @@ class LoadCommand extends Command {
             case "png":
             case "gif":
                 if (!images.containsKey(tag)) {
-                    PImage image = loadImage(filename);
-                    images.put(tag, image);
+                    int cols = params.asInt("cols");
+                    int rows = params.asInt("rows");
+                    if (cols > 0 && rows > 0) {
+                        images.put(tag, new SpriteImage(filename, cols, rows));
+                    } else {
+                        images.put(tag, new SpriteImage(filename));
+                    }
                 } // not an error to attempt reload, use purge to force refresh
                 break;
             case "wav":
@@ -1848,7 +1938,7 @@ public String expandAllOnLine(String line) {
     StringBuilder varName = new StringBuilder();
     StringBuilder newLine = new StringBuilder(line.length());
     int pos = 0;
-    String whiteSpace = " ,.\t;";
+    String whiteSpace = " ,.\t;)(";
 
     boolean readingName = false;
     boolean inBraces = false;
@@ -1881,7 +1971,7 @@ public String expandAllOnLine(String line) {
         }
         if (readingName && whiteSpace.indexOf(c) >= 0) {
             newLine.append(expandVar(varName.toString()));
-            newLine.append(' ');
+            newLine.append(c); // preserve what ended us, in case it was a bracket
             varName = new StringBuilder();
             readingName = false;
             continue;
@@ -1988,14 +2078,14 @@ class CommandProcessor {
 }
 /*************************************************************************************************
 
-    #####                              
-   #     #  ####  ###### #    # ###### 
-   #       #    # #      ##   # #      
-    #####  #      #####  # #  # #####  
-         # #      #      #  # # #      
-   #     # #    # #      #   ## #      
-    #####   ####  ###### #    # ###### 
-                                       
+    #####
+   #     #  ####  ###### #    # ######
+   #       #    # #      ##   # #
+    #####  #      #####  # #  # #####
+         # #      #      #  # # #
+   #     # #    # #      #   ## #
+    #####   ####  ###### #    # ######
+
 **************************************************************************************************/
 
 class Scene {
@@ -2044,7 +2134,7 @@ class Scene {
                     sceneActions.add(action);
                     break;
             }
-        } 
+        }
         for (Action action : sceneActions) {
             action.trigger.reset();
             if (action.triggered()) {

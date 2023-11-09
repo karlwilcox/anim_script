@@ -1,6 +1,6 @@
 # Lego city script
 
-
+/*
 begin
   set var to one
   echo var is $var, comparing to one
@@ -16,19 +16,26 @@ begin
   if $bool = true then echo it is true
   set bool to false
   if $bool then echo it is true
-
+*/
 #  debug vars
+
+
+set var to (2*$CENTERX)
+echo $var
 
 # Load up all our resources at the beginning
 begin 
     load street.png as street
     load clouds.jpg as sky
+    load running.png as runner split 5 by 2
 
 # Place static backgrounds
 begin 
     place sky at $CENTERX,$CENTERY,99
     place street at $CENTERX,$CENTERY,10
-    show street sky
+    place runner at 100,500,1
+    move runner to 1600,500 in 20 seconds
+    show street sky runner
 
 scene plane
   begin 
