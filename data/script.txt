@@ -20,8 +20,8 @@ begin
 #  debug vars
 
 
-set var to (2*$CENTERX)
-echo $var
+# set var to (2*$CENTERX)
+# echo $var
 
 # Load up all our resources at the beginning
 begin 
@@ -38,6 +38,7 @@ begin
     rate runner to ($FRAMERATE / 60)
     rate runner to 2 in 20 seconds
     show street sky runner
+    tint street to 10 in 30 seconds
 
 scene plane
   begin 
