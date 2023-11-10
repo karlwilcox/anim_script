@@ -638,37 +638,75 @@ class SpriteImage {
 
 
 class Sprite {
+
+    class Adjustable {
+        private float currentValue;
+        private float targetValue;
+        private float deltaValue;
+        private final float upperLimit;
+        private final float lowerLimit;
+
+        Adjustable() {
+            this(0.0f);
+        }
+
+        Adjustable(float in_value) {
+            this(in_value, MIN_FLOAT, MAX_FLOAT);
+        }
+
+        Adjustable(float in_value, float in_lower, float in_upper) {
+            currentValue = in_value;
+            targetValue = in_value;
+            deltaValue = 0.0f;
+            lowerLimit = in_lower;
+            upperLimit = in_upper;
+        }
+
+        float value() {
+            return currentValue;
+        }
+
+        void setTargetValue(float in_value, float in_seconds ) {
+            if (targetValue < lowerLimit) {
+                targetValue = lowerLimit;
+            } else if (targetValue > upperLimit) {
+                targetValue = upperLimit;
+            }
+            targetValue = in_value;
+            if (in_seconds < 0.001f) { // move now
+                currentValue = in_value;
+                deltaValue = 0.0f;
+            } else {
+                deltaValue = (targetValue - currentValue) / (in_seconds * FRAMERATE);
+            }
+        }
+
+        void updateValue() {
+            if (Math.abs(currentValue - targetValue) > Math.abs(deltaValue)) {
+                currentValue += deltaValue;
+            }
+        }
+    }
+
     String imageTag;
     String tag;
     String scene;
     private boolean visible = false;
     // current values
-    float x;      // position and depth
-    float y;
+        Adjustable x = new Adjustable();
+        Adjustable y = new Adjustable();
+        Adjustable w = new Adjustable();
+        Adjustable h = new Adjustable();
+        Adjustable r = new Adjustable();
+        Adjustable alpha = new Adjustable(0,0,100);
     int z;
-    float w;    // width and height
-    float h;
     float u;    // centre of rotation
     float v;
-    float r;    // angle of rotation
     float tint = 0;  // tint and transparency
-    float trans = 100;
     // target values
-    float tx;
-    float ty;
-    float tr;
-    float tw;
-    float th;
     float ttint = 0;
-    float ttrans = 0;
     // change rates (per frame)
-    float dx = 0;
-    float dy = 0;
-    float dw = 0;
-    float dh = 0;
-    float dr = 0;
     float dtint = 0;
-    float dtrans = 0;
 
     int framesPerSpriteFrame = 1;
     int currentSpriteFrame = 0;
@@ -688,68 +726,36 @@ class Sprite {
         float in_x, float in_y, int in_z, float in_w, float in_h,
         String in_scene) {
         scene = in_scene;
-        x = in_x; tx = in_x;
-        y = in_y; ty = in_y;
+        x.setTargetValue(in_x, 0.0f);
+        y.setTargetValue(in_y, 0.0f);
         z = in_z;
         if (in_w < 0.0f) {
             SpriteImage spriteImage = images.get(in_imageTag);
             in_w = spriteImage.width();
             in_h = spriteImage.height();
         }
-        w = in_w; tw = in_w;
-        h = in_h; th = in_h;
+        w.setTargetValue(in_w, 0.0f);
+        h.setTargetValue(in_h, 0.0f);
         imageTag = in_imageTag;
         tag = in_tag;
     }
 
     public void fade(float to_trans, float in_seconds) {
-        // silently set some limits
-        if (to_trans > 100) {
-            to_trans = 100;
-        } else if (to_trans < 0) {
-            to_trans = 0;
-        }
-        if (in_seconds < 0.001f) { // move now
-            trans = to_trans; ttrans = to_trans;
-            return;
-        } // else
-        ttrans = to_trans;
-        dtrans = (to_trans - trans) / (in_seconds * FRAMERATE);
+        alpha.setTargetValue(to_trans, in_seconds);
     }
- 
+
     public void move(float to_x, float to_y, float in_seconds) {
-        // message("Moving " + tag + " to " + to_x + "," + to_y);
-        if (in_seconds < 0.001f) { // move now
-            x = to_x; tx = to_x;
-            y = to_y; ty = to_y;
-            return;
-        } // else
-        tx = to_x;
-        dx = (to_x - x) / (in_seconds * FRAMERATE);
-        ty = to_y;
-        dy = (to_y - y) / (in_seconds * FRAMERATE);
+        x.setTargetValue(to_x, in_seconds);
+        y.setTargetValue(to_y, in_seconds);
     }
 
     public void resize(float to_w, float to_h, float in_seconds) {
-        // message("Moving " + tag + " to " + to_x + "," + to_y);
-        if (in_seconds < 0.001f) { // move now
-            w = to_w; tw = to_w;
-            h = to_h; th = to_h;
-            return;
-        } // else
-        tw = to_w;
-        dw = (to_w - w) / (in_seconds * FRAMERATE);
-        th = to_h;
-        dh = (to_h - h) / (in_seconds * FRAMERATE);
+        w.setTargetValue(to_w, in_seconds);
+        h.setTargetValue(to_h, in_seconds);
     }
 
     public void turn(float to_r, float in_seconds) {
-        if (in_seconds < 0.001f) { // move now
-            r = to_r; tr = to_r;
-            return;
-        } // else
-        tr = to_r;
-        dr = (to_r - r) / (in_seconds * FRAMERATE);
+        r.setTargetValue(to_r, in_seconds);
     }
 
     public void show() {
@@ -765,26 +771,12 @@ class Sprite {
     }
 
     public void update() {
-        if (Math.abs(x - tx) > Math.abs(dx)) {
-            x += dx;
-        }
-        if (Math.abs(y - ty) > Math.abs(dy)) {
-            y += dy;
-        }
-        if (Math.abs(w - tw) > Math.abs(dw)) {
-            w += dw;
-        }
-        if (Math.abs(h - th) > Math.abs(dh)) {
-            h += dh;
-        }
-        if (Math.abs(trans - ttrans) > Math.abs(dtrans)) {
-            trans += dtrans;
-        }
-        if (Math.abs(r - tr) > Math.abs(dr)) {
-            r += dr;
-        } else {
-            r = tr;
-        }
+        x.updateValue();
+        y.updateValue();
+        h.updateValue();
+        w.updateValue();
+        r.updateValue();
+        alpha.updateValue();
     }
 
     public void display() {
@@ -794,19 +786,19 @@ class Sprite {
             lastFrameCount = frameCount;
         }
         PImage image = spriteImage.getSpriteFrame(currentSpriteFrame);
-        if (trans > 0) {
-            tint(100, (int)trans);
+        if (alpha.value() > 0) {
+            tint(100, (int)alpha.value());
         }
-        if (r != 0.0f) {
+        if (r.value() != 0.0f) {
             pushMatrix();
-            translate(x, y);
-            rotate(radians(r));
-            image(image, 0, 0, w, h);
+            translate(x.value(), y.value());
+            rotate(radians(r.value()));
+            image(image, 0, 0, w.value(), h.value());
             popMatrix();
         } else { // more simple
-            image(image, x, y, w, h);
+            image(image, x.value(), y.value(), w.value(), h.value());
         }
-        if (trans > 0) {
+        if (alpha.value() > 0) {
             tint(100, 100);
         }
     }
