@@ -698,9 +698,9 @@ processing-java --sketch=~/Documents/Processing/lego_animation --force --output=
         Adjustable alpha = new Adjustable(0, 0, 100);
         Adjustable gray = new Adjustable(100,0,100);
         Adjustable framesPerSpriteFrame = new Adjustable(1.0f);
-        int z;
-        float u;    // centre of rotation
-        float v;
+        int z = 0;
+        int rx = 0;    // centre of rotation
+        int ry = 0;
 
 
         private int currentSpriteFrame = 0;
@@ -756,6 +756,11 @@ processing-java --sketch=~/Documents/Processing/lego_animation --force --output=
             r.setTargetValue(to_r, in_seconds);
         }
 
+        public void setCenter(int in_rx, int in_ry) {
+            rx = in_rx;
+            ry = in_ry;
+        }
+
         public void show() {
             visible = true;
         }
@@ -794,7 +799,7 @@ processing-java --sketch=~/Documents/Processing/lego_animation --force --output=
             }
             if (r.value() != 0.0f) {
                 pushMatrix();
-                translate(x.value(), y.value());
+                translate(x.value() + (float)rx, y.value() + (float)ry);
                 rotate(radians(r.value()));
                 image(image, 0, 0, w.value(), h.value());
                 popMatrix();
@@ -1698,6 +1703,26 @@ processing-java --sketch=~/Documents/Processing/lego_animation --force --output=
         }
     }
 
+    class CenterCommand extends Command {
+
+        CenterCommand() {
+            keywords = List.of("centre", "center");
+            helpInfo = "center tag [at] x,y (set centre of rotation, in pixels relative to existing centre)";
+            format = "+/tag ~/to +/x +/y";
+        }
+
+        public boolean doProcess() {
+            Sprite sprite = sprites.find(params.get("tag"), scene);
+            if (sprite != null) {
+                int x = params.asInt("x");
+                int y = params.asInt("y");
+                sprite.setCenter(x, y);
+            }
+            return false;
+        }
+    }
+
+
     class MoveCommand extends Command {
 
         MoveCommand() {
@@ -2053,6 +2078,7 @@ class CommandProcessor {
         commandList.add(new LoadCommand());
         commandList.add(new RandomCommand());
         commandList.add(new CalcCommand());
+        commandList.add(new CenterCommand());
         commandList.add(new ReadCommand());
         commandList.add(new EchoCommand());
         commandList.add(new ExitCommand());
