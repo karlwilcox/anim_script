@@ -35,6 +35,8 @@ begin
     place street at $CENTERX,$CENTERY,10
     place runner at 100,500,1
     move runner to 1600,500 in 20 seconds
+    rate runner to ($FRAMERATE / 60)
+    rate runner to 2 in 20 seconds
     show street sky runner
 
 scene plane
