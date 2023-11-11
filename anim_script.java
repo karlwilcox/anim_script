@@ -29,6 +29,8 @@ processing-java --sketch=~/Documents/Processing/lego_animation --force --output=
 */
 
     int FRAMERATE = 10;
+    static int SIZE_X = 1080;
+    static int SIZE_Y = 1920;
 
     HashMap<String, SpriteImage> images = new HashMap<String, SpriteImage>();
     HashMap<String, SoundFile> sounds = new HashMap<String, SoundFile>();
@@ -2364,13 +2366,25 @@ public void draw() {
 };
 
 
-  public void settings() { size(1920, 1080); }
+  public void settings() { size(SIZE_X, SIZE_Y); }
 
   static public void main(String[] passedArgs) {
     //String[] appletArgs = new String[] { "--full-screen", "--bgcolor=#666666", "--hide-stop", "anim_script" };
     String[] appletArgs = new String[] { "--bgcolor=#666666", "anim_script" };
+    ArrayList<String> tempArgs = new ArrayList<String>();
     if (passedArgs != null) {
-      PApplet.main(concat(appletArgs, passedArgs));
+        for (String arg: passedArgs) {
+            if (arg.startsWith("--width=")) {
+                SIZE_X = Integer.parseInt(arg.substring(8));
+            } else if (arg.startsWith("--height=")) {
+                SIZE_Y = Integer.parseInt(arg.substring(9));
+            } else {
+                tempArgs.add(arg);
+            }
+        }
+        String[] sendArgs = new String[tempArgs.size()];
+        sendArgs = tempArgs.toArray(sendArgs);
+      PApplet.main(concat(appletArgs, sendArgs));
     } else {
       PApplet.main(appletArgs);
     }
