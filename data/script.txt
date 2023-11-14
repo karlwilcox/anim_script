@@ -1,83 +1,85 @@
-# Lego city script
+# Lego Street in perspective
 
-/*
-begin
-  set var to one
-  echo var is $var, comparing to one
-  if $var is one then echo they are the same
-  if $var is two then echo they are different
-  set chance to $PERCENT
-  echo chance is $chance
-  if $chance > 50 then echo higher
-  if $chance < 51 then echo lower
-  calculate test as 2 > 12
-  echo test as $test 
-  set bool to true
-  if $bool = true then echo it is true
-  set bool to false
-  if $bool then echo it is true
+/* Z depths
+1000 background sky & earth
+950-999 clouds
+900-949 Aerial Objects
+850-899 very distant buildings
+800-850 distant houses etc
+750-799 distant road
+700-749 crossing vehicles
+650-699 medium distance buildings
+600-649 trains
+550-599 near road
+500-549 near buildings
+450-499 near vehicles etc.
 */
-#  debug vars
 
+# Main scene - load & display background
+begin
+    load background.png as background
+    load road-distant.png as road-distant
+    load road-near.png as road-near
+    load far-houses-left.png as block-far-l
+    load far-houses-right.png as block-far-r
+    load block-near-right.png as block-near-r
 
-# set var to (2*$CENTERX)
-# echo $var
+    place background at $CENTREX,$CENTREY,1000
+    place block-far-l at 317,845,800
+    place block-far-r at 776,844,801
+    place road-distant at 497, 1281,750
+    place road-near at 540,1661,550
+    place block-near-r at 935,1021,500
 
-# Load up all our resources at the beginning
-begin 
-    load street.png as street
-    load clouds.jpg as sky
-    load running.png as runner split 5 by 2
+    show background block-far-l block-far-r road-distant road-near block-near-r
 
-# Place static backgrounds
-begin 
-    place sky at $CENTERX,$CENTERY,99
-    place street at $CENTERX,$CENTERY,10
-    place runner at 100,500,1
-    move runner to 1600,500 in 20 seconds
-    rate runner to ($FRAMERATE / 60)
-    rate runner to 2 in 20 seconds
-    show street sky runner
-    tint street to 10 in 30 seconds
+scene refuse-truck-rtol
+    begin
+        # echo starting refuse-truck-rtol
+        load refuse-truck-rtol.png as refuse-truck-rtol
+        load sounds/truckdriveby.wav as truck-noise
+        place refuse-truck-rtol as truck at 1100,1190,720
+        move truck to 0,1190 in 12 seconds
+        show truck
 
-scene plane
-  begin 
-    load plane.png as plane
-    load jetstart.wav as jetstart
-    load jetpass2.wav as jetpass
-    play jetstart
-    place plane at 1800,800,20 size 500,500
-    move plane to 200,100 in 20 seconds
-    resize plane to 100,100 in 20 seconds
-    show plane
-  after 12 
-    play jetpass
-  after 20 
-    hide plane
-  after 25 
-    stop
+    after 2 seconds
+        play truck-noise
+
+    after 12 seconds
+        hide truck
+        stop
 endscene
 
-scene cloud
-begin 
-    load cloud1.png as cloud1
-    place cloud1 at 600,0,50 size 300,150
-    move cloud1 to 1000,250 in 15 seconds
-    rotate cloud1 to 90 in 15 seconds
-    resize cloud1 to 100,50 in 15 seconds
-    fade cloud1 to 50 in 15 seconds
-    show cloud1
-  after 20 
-    hide cloud1
-  after 22 
-    stop
+scene passenger-train-ltor
+    begin
+        load railroadcrossing.wav as rr-crossing
+        load trainpassslow.wav as train-pass
+        load loco-ltor.png as loco-ltr
+        # load coach-1.png as coach1
+        place loco-ltr at -100,1227,620
+        # start barriers
+        play rr-crossing
+
+    after 3 seconds
+        play train-pass
+        move loco-ltr to 1200,1227 in 10 seconds
+        show loco-ltr
+
+    after 15 seconds
+        hide loco-ltr
+        stop
 endscene
 
-# Top level actions
-after 40 
-  exit
+# Main Scene activate
 
 after 5 seconds
-  start cloud
-  start plane
+    # if $PERCENT > 50 then start refuse-truck-rtol
+    start refuse-truck-rtol
+
+after 20 seconds
+    start passenger-train-ltor
+
+# after 30 seconds
+#    exit
+
 

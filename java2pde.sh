@@ -1,7 +1,6 @@
 #!/bin/sh
 base=$(basename $1)
 outputName=${base%%.*}.pde
-echo $outputName
 doCopy="false"
 while IFS= read -r line; do
     if [ "$doCopy" = "true" ]; then
@@ -12,7 +11,7 @@ while IFS= read -r line; do
             *+++ONLY*)
             ;;
             *)
-          echo "$line";
+          echo "$line" >> "$outputName";
             ;;
         esac
     else
