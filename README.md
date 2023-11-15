@@ -48,6 +48,6 @@ The anim_script code exists in two forms, ```anim_script.java```, which is pure 
 
 Below is an early prototype of the intended use, displayed on a thin screen monitor placed behind some Lego creator buildings on a narrow shelf, to give both the appearance of greater depth and a randomly occuring set of sounds and actions.
 
-
+![Lego City Under Construction](https://github.com/karlwilcox/anim_script/assets/3171760/48e572ca-686e-4af4-8bcc-9f5a08bb761b)
 
 
